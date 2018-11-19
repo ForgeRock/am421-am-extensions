@@ -1,0 +1,67 @@
+[
+    {
+        "username": "demo",
+        "uid": ["demo"],
+        "mail": ["demo@acme.com"],
+        "givenName": ["Demo"],
+        "cn": ["demo"],
+        "sn": ["User"],
+        "userPassword" : "cangetin"
+    }, 
+    {
+        "username": "contactListBackend",
+        "uid": ["contactListBackend"],
+        "givenName": ["ContactList"],
+        "cn": ["ContactList Backend"],
+        "sn": ["Backend"],
+        "userPassword" : "cangetinBackend"
+    }, 
+    {
+        "username": "john",
+        "uid": ["john"],
+        "givenName": ["John"],
+        "sn": ["Connor"],
+        "cn": ["John Connor"],
+        "userPassword" : "cangetin"
+    }, 
+    {
+        "username": "contactreader",
+        "uid": ["contactreader"],
+        "givenName": ["Contact"],
+        "sn": ["Reader"],
+        "cn": ["Contact Reader"],
+        "userPassword" : "cangetin"
+    }, 
+    {
+        "username": "contactadmin",
+        "uid": ["contactadmin"],
+        "givenName": ["Contact"],
+        "cn": ["Contact Admin"],
+        "sn": ["Admin"],
+        "userPassword" : "cangetin"
+    },
+    {
+        "username": "profileadmin",
+        "uid": ["profileadmin"],
+        "givenName": ["Profile"],
+        "sn": ["Admin"],
+        "cn": ["Profile Admin"],
+        "userPassword" : "cangetin"
+    }, 
+    {
+        "username": "superAdmin",
+        "uid": ["superAdmin"],
+        "givenName": ["Super"],
+        "cn": ["Super Admin"],
+        "sn": ["Admin"],
+        "userPassword" : "cangetin"
+    }, 
+    {
+        "username": "simpleuser",
+        "uid": ["simpleuser"],
+        "givenName": ["Simple"],
+        "cn": ["Simple User"],
+        "sn": ["User"],
+        "userPassword" : "cangetin"
+    }
+]

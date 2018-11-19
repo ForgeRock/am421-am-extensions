@@ -1,0 +1,31 @@
+[
+    {
+        "username": "ContactReader",
+        "uniqueMember": [
+            "uid=john,ou=people,dc=openam,dc=forgerock,dc=org",
+            "uid=contactreader,ou=people,dc=openam,dc=forgerock,dc=org",
+            "uid=superAdmin,ou=people,dc=openam,dc=forgerock,dc=org"
+        ]
+    },
+    {
+        "username": "ContactAdmin",
+        "uniqueMember": [
+            "uid=john,ou=people,dc=openam,dc=forgerock,dc=org",
+            "uid=contactadmin,ou=people,dc=openam,dc=forgerock,dc=org",
+            "uid=superAdmin,ou=people,dc=openam,dc=forgerock,dc=org"
+        ]
+    },
+    {
+        "username": "ProfileAdmin",
+        "uniqueMember": [
+            "uid=superAdmin,ou=people,dc=openam,dc=forgerock,dc=org",
+            "uid=profileadmin,ou=people,dc=openam,dc=forgerock,dc=org"
+        ]
+    },
+    {
+        "username": "SessionPropertyReader",
+        "uniqueMember": [
+            "uid=contactListBackend,ou=people,dc=openam,dc=forgerock,dc=org"
+        ]
+    }
+]

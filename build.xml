@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="authnvalid" default="usage" >
+
+    <description>MyModule Deployer</description>
+
+    <property name="xml.dir" location="${project.build.outputDirectory}"/>
+    <property name="locale.dir" location="locale"/>
+
+    <!-- Optional Properties for the quick-deploy target -->
+    <property name="auth.module.name" value="SelectRole"/>
+    <property name="auth.module.package" value="com.forgerock.edu.authmodule"/>
+    <property name="auth.module.classname" value="${auth.module.package}.${auth.module.name}"/>
+    <property name="auth.module.serviceName" value="sunAMAuth${auth.module.name}Service"/>
+    
+    <property name="openam.ssoadm.cmd" value="${openam.tools.dir}/openam/bin/ssoadm"/>
+    <property name="openam.ssoadm.passwordfile" value="${openam.tools.dir}/.password.openam"/>
+    <property name="openam.config.auth.dir" value="${openam.deploy.dir}/config/auth"/>
+    <property name="callbacks.xml.name" value="${auth.module.name}.xml"/>
+    <property name="servicedef.xml.name" value="${auth.module.name}ServiceDef.xml"/>
+
+    <!-- Clean directories containing all built elements -->
+    <target name="clean">
+        <delete file="${openam.deploy.dir}/WEB-INF/lib/${built.jar.name}" />
+        <delete file="${openam.deploy.dir}/config/auth/default/${callbacks.xml.name}"/>
+    </target>
+
+
+    <!-- Copying the module in an OpenAM instance -->
+    <target name="copy-files">
+        <echo message="openam.tools.dir=${openam.tools.dir}"/>
+        <fail unless="openam.tools.dir" message="openam.tools.dir is not set!!"/>
+        <echo message="ant.version = ${ant.version}"/>
+	<!-- Copy the JAR file -->
+	<copy file="${built.jar}" todir="${openam.deploy.dir}/WEB-INF/lib"/>
+
+	<!-- Copy Callback XML files -->
+        <copy file="${xml.dir}/${callbacks.xml.name}" todir="${openam.deploy.dir}/config/auth/default" />
+
+    </target>
+
+    <target name="create-service">
+        <echo message="Trying to register service ${auth.module.serviceName}."/>
+        <exec dir="${basedir}" executable="${openam.ssoadm.cmd}" resultproperty="register.service1.result">
+            <arg line="create-svc"/>
+            <arg line="--adminid amadmin"/>
+            <arg line="--password-file ${openam.ssoadm.passwordfile}"/>
+            <arg line="--xmlfile ${xml.dir}/${servicedef.xml.name}"/>
+        </exec>
+        <condition property="service1.already.exists">
+            <equals arg1="${register.service1.result}" arg2="127"/>
+        </condition>
+    </target>
+    
+    <target name="update-service" depends="create-service" if="service1.already.exists">
+        <echo message="Updating service ${auth.module.serviceName}."/>
+        <exec dir="${basedir}" executable="${openam.ssoadm.cmd}" >
+            <arg line="update-svc"/>
+            <arg line="--adminid amadmin"/>
+            <arg line="--password-file ${openam.ssoadm.passwordfile}"/>
+            <arg line="--xmlfile ${xml.dir}/${servicedef.xml.name}"/>
+        </exec>
+    </target>
+    
+    <target name="delete-service">
+        <echo message="Deleting service ${auth.module.serviceName}."/>
+        <exec dir="${basedir}" executable="${openam.ssoadm.cmd}" >
+            <arg line="delete-svc"/>
+            <arg line="--adminid amadmin"/>
+            <arg line="--password-file ${openam.ssoadm.passwordfile}"/>
+            <arg line="--servicename ${auth.module.serviceName}"/>
+        </exec>
+    </target>
+    <!-- Register the authentication module -->
+    <target name="register" depends="copy-files, delete-service, create-service, update-service">
+        <echo message="Registering auth module ${auth.module.classname}."/>
+        <exec dir="${basedir}" executable="${openam.ssoadm.cmd}">
+            <arg line="register-auth-module"/>
+            <arg line="--adminid amadmin"/>
+            <arg line="--password-file ${openam.ssoadm.passwordfile}"/>
+            <arg line="--authmodule ${auth.module.classname}"/>
+        </exec>
+    </target>
+
+    <!-- Unregister the authentication module -->
+    <target name="unregister">
+        <exec dir="${basedir}" executable="${openam.ssoadm.cmd}">
+            <arg line="delete-svc"/>
+            <arg line="--adminid amadmin"/>
+            <arg line="--password-file ${openam.ssoadm.passwordfile}"/>
+            <arg line="--servicename ${auth.module.serviceName}"/>
+        </exec>
+    </target>
+
+<!--    <target name="run" depends="build">
+        <java fork="true" classname="com.sun.identity.authentication.modules.valid.VALidTester">
+            <classpath>
+                <path location="${dist.dir}/${jarname}"/>
+                <path location="${valid.extlib.dir}"/>
+                <fileset dir="${valid.extlib.dir}">
+        	    <include name="**/*.jar"/>
+      		</fileset>
+            </classpath>
+        </java>
+    </target>-->
+
+    <!-- Usage message -->
+    <target name="usage">
+        <echo message=" "/>
+	<echo message="The following targets are available:"/>
+	<echo message=" "/>
+	<echo message="  clean : cleans any generated files"/>
+	<echo message="  usage : displays this usage message"/>
+	<echo message="  build : compiles all the java source files"/>
+	<echo message="  quick-deploy : Copies files in existing OpenSSO deployment"/>
+	<echo message="  register : Registers module with OpenSSO instance"/>
+	<echo message="  unregister : Unregisters module with OpenSSO instance"/>
+	<echo message="  run : executes the VALidTester class"/>
+	<echo message=" "/>
+	<echo message="To run a target, issue the following command:"/>
+	<echo message=" "/>
+	<echo message="  ant (target-name)"/>
+	<echo message=" "/>
+        <echoproperties/>
+    </target>
+
+</project>
