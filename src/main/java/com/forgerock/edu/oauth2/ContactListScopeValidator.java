@@ -1,19 +1,10 @@
 package com.forgerock.edu.oauth2;
 
-import com.forgerock.edu.policy.ContactListPrivilegesEvaluator;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.iplanet.sso.SSOException;
-import com.iplanet.sso.SSOToken;
-import com.iplanet.sso.SSOTokenManager;
-import com.sun.identity.entitlement.EntitlementException;
 import com.sun.identity.shared.debug.Debug;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import javax.servlet.http.HttpServletRequest;
 import org.forgerock.oauth2.core.AccessToken;
 import org.forgerock.oauth2.core.ClientRegistration;
 import org.forgerock.oauth2.core.OAuth2Request;
@@ -22,8 +13,6 @@ import org.forgerock.oauth2.core.Token;
 import org.forgerock.oauth2.core.UserInfoClaims;
 import org.forgerock.oauth2.core.exceptions.*;
 import org.forgerock.openam.oauth2.OpenAMScopeValidator;
-import org.restlet.Request;
-import org.restlet.ext.servlet.ServletUtils;
 
 /**
  * ScopeValidator implementation that handles special scopes representing
@@ -41,7 +30,6 @@ import org.restlet.ext.servlet.ServletUtils;
 public class ContactListScopeValidator implements ScopeValidator {
 
     private static final Debug DEBUG = Debug.getInstance("ContactListScopeValidator");
-    private static final String PRIVILEGE_PREFIX = "privilege://";
 
     @Inject
     private OpenAMScopeValidator openAMScopeValidator;
@@ -53,7 +41,7 @@ public class ContactListScopeValidator implements ScopeValidator {
     public Set<String> validateAuthorizationScope(ClientRegistration clientRegistration, Set<String> scope, OAuth2Request request)
             throws InvalidScopeException, ServerException {
         final Set<String> validatedScope = openAMScopeValidator.validateAuthorizationScope(clientRegistration, scope, request);
-        addScopesBasedOnPrivileges(validatedScope, request);
+        DEBUG.message("validateAuthorizationScope validated scope: " + validatedScope);
         return validatedScope;
     }
 
@@ -65,9 +53,8 @@ public class ContactListScopeValidator implements ScopeValidator {
             ClientRegistration clientRegistration,
             Set<String> scope,
             OAuth2Request request) throws InvalidScopeException, ServerException {
-        DEBUG.message("validateAccessTokenScope request:" + request.getBody() + ", scope: " + scope);
         final Set<String> validatedScope = openAMScopeValidator.validateAccessTokenScope(clientRegistration, scope, request);
-//        addScopesBasedOnPrivileges(validatedScope, request);
+        DEBUG.message("validateAccessTokenScope validated scope: " + validatedScope);
         return validatedScope;
     }
 
@@ -80,42 +67,25 @@ public class ContactListScopeValidator implements ScopeValidator {
             Set<String> requestedScope,
             Set<String> tokenScope,
             OAuth2Request request) throws ServerException, InvalidScopeException {
-        DEBUG.message("validateRefreshTokenScope " + request);
         final Set<String> validatedScope = openAMScopeValidator.validateRefreshTokenScope(clientRegistration, requestedScope, tokenScope, request);
-//        addScopesBasedOnPrivileges(validatedScope, request);
+        DEBUG.message("validateRefreshTokenScope validated scope: " + validatedScope);
         return validatedScope;
     }
 
     /**
-     * Removes all scopes starting with {@code phonebook://privileges/} which is
-     * not in the privilege set of the current user session. Privileges are
-     * calculated with
-     * {@link #evaluatePrivileges(org.forgerock.oauth2.core.OAuth2Request)}
-     * method.
+     * Returns the resource owners claim information based on the request and
+     * optionally based on the access token. This method is called in two
+     * separate use cases:
+     * <ul>
+     * <li>When collecting the data that will be shown on the consent screen. In
+     * this case the {@code token} parameter is null.</li>
+     * <li>When the OpenID connect userinfo REST endpoint is called. In this
+     * case the {@code token} parameter contains the access token.
+     * </li>
+     * </ul>
      *
-     * @param scopes Modifiable set containing all the scopes. This set will be
-     * reduced based on the privileges
-     * @param request Current OAuth2Request.
-     * @throws InvalidScopeException
-     * @throws ServerException
-     */
-    void addScopesBasedOnPrivileges(Set<String> scopes, OAuth2Request request)
-            throws InvalidScopeException, ServerException {
-        try {
-            Set<String> privilegeSet = evaluatePrivileges(request);
-            privilegeSet.stream()
-                    .map((privilege) -> PRIVILEGE_PREFIX + privilege)
-                    .forEach((scope) -> scopes.add(scope));
-        } catch (SSOException | EntitlementException ex) {
-            DEBUG.error("Exception during determining privileges", ex);
-        }
-
-    }
-
-    /**
-     * Gets the resource owners information based on an issued access token. In
-     * addition to the behavior of
-     * {@link OpenAMScopeValidator#getUserInfo(org.forgerock.oauth2.core.AccessToken, org.forgerock.oauth2.core.OAuth2Request) OpenAMScopeValidator.getUserInfo}
+     * In addition to the behavior of
+     * {@link OpenAMScopeValidator#getUserInfo(ClientRegistration, AccessToken, OAuth2Request)}
      * method, this implementation adds fields named {@code privileges} and
      * {@code expires_in}. Privileges are extracted from the access token's
      * assigned scopes, the current access token's expiry time is converted into
@@ -133,13 +103,14 @@ public class ContactListScopeValidator implements ScopeValidator {
             AccessToken token,
             OAuth2Request request)
             throws UnauthorizedClientException, NotFoundException, ServerException, InvalidRequestException {
-        DEBUG.message("getUserInfo " + request);
         UserInfoClaims userInfoClaims = openAMScopeValidator.getUserInfo(clientRegistration, token, request);
+        DEBUG.message("getUserInfo claims provided by openAMScopeValidator: " + userInfoClaims.getValues() + ", composite scopes: " + userInfoClaims.getCompositeScopes());
+        //DONE lab11: Add a new claim called "expires_in" which should cointain the token's time to live in seconds.
+        //DONE lab11: If the token is not null, calculate the TTL: (token.getExpiryTime() - System.currentTimeMillis()) / 1000
+        //DONE lab11: Put this value to userInfoClaims.getValues() with the key "expires_in".
         if (token != null) {
-            List<String> privileges = extractPrivileges(token);
-            userInfoClaims.getValues().put("contactlist-privileges", privileges);
-            // TODO 05_01: Add the expires_in property value to the user claim info in seconds.
             userInfoClaims.getValues().put("expires_in", (token.getExpiryTime() - System.currentTimeMillis()) / 1000);
+            DEBUG.message("getUserInfo modified claim set: " + userInfoClaims.getValues());
         }
         return userInfoClaims;
     }
@@ -153,62 +124,9 @@ public class ContactListScopeValidator implements ScopeValidator {
      */
     @Override
     public Map<String, Object> evaluateScope(AccessToken token) {
-        DEBUG.message("evaluateScope " + token);
-        List<String> privileges = extractPrivileges(token);
         Map<String, Object> tokenInfo = openAMScopeValidator.evaluateScope(token);
-        //removing extra attributes for each privilege
-        for (String privilege : privileges) {
-            tokenInfo.remove(privilege);
-        }
-        tokenInfo.put("contactlist-privileges", privileges); //adding privileges as a single extra attribute
+        DEBUG.message("evaluateScope response: " + tokenInfo);
         return tokenInfo;
-    }
-
-    /**
-     * Extracts privileges list from a given AccessToken. Privileges are
-     * conventionally named scopes, starting with
-     * {@link ContactListPrivilegesEvaluator#PRIVILEGES_RESOURCE} ({@code phonebook://privileges/}).
-     *
-     * @param token
-     * @return
-     */
-    List<String> extractPrivileges(AccessToken token) {
-        final int prefixLength = PRIVILEGE_PREFIX.length();
-        return token.getScope().stream()
-                .filter((scope) -> (scope.startsWith(PRIVILEGE_PREFIX)))
-                .map((scope) -> scope.substring(prefixLength))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Evaluates privileges based on the current SSOToken extracted from the
-     * current {@code HttpServletRequest} object. Uses {@link SSOTokenManager}
-     * to create the {@link SSOToken} based on the current
-     * {@link HttpServletRequest}, then calls
-     * {@link ContactListPrivilegesEvaluator#getContactListPrivileges(com.iplanet.sso.SSOToken, java.lang.String)}
-     * method to evaluate privileges of the user.
-     *
-     * @param request
-     * @return
-     * @throws SSOException
-     * @throws EntitlementException
-     */
-    Set<String> evaluatePrivileges(OAuth2Request request) throws SSOException, EntitlementException {
-        //extracting HttpServletRequest from OAuth2Request:
-        final HttpServletRequest httpServletRequest = ServletUtils.getRequest((Request) request.getRequest());
-
-        final SSOTokenManager tokenManager = SSOTokenManager.getInstance();
-        //extracting SSOToken from HttpServletRequest:
-        SSOToken ssoToken = tokenManager.createSSOToken(httpServletRequest);
-        if (ssoToken == null) {
-            DEBUG.warning("evaluatePrivileges: Could not find SSOToken in OAuth2Request! Returning with an empty privileges set.");
-            return new HashSet<>();
-        }
-        Set<String> privileges = ContactListPrivilegesEvaluator.getContactListPrivileges(ssoToken);
-        if (DEBUG.messageEnabled()) {
-            DEBUG.message("evaluatePrivileges: Returning with: " + privileges);
-        }
-        return privileges;
     }
 
     /**

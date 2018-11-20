@@ -63,12 +63,18 @@ public class ContactListTokenResponseTypeHandler implements ResponseTypeHandler 
             claims = request.getParameter(OAuth2Constants.Custom.CLAIMS);
             claims = addContactListPrivilegesAsClaim(request, claims);
         }
-        // TODO: Investigate and fix the next two lines.
-        GrantSet grantSet = this.tokenStore.getGrantSet(clientId, resourceOwner.getId(), request, true);
-        Grant grant = this.tokenStore.createGrant(request, grantSet, clientId);
-                   //this.tokenStore.createGrant(clientId, resourceOwner.getId(), scope, request);
-        AccessToken generatedAccessToken = this.tokenStore.createAccessToken(grantSet, grant, tokenType, redirectUri, nonce, claims, request, resourceOwner.getAuthTime(), scope, resourceOwner.getAuthLevel());
-                                         //this.tokenStore.createAccessToken(grant, "token", tokenType, redirectUri, nonce, claims, request, resourceOwner.getAuthTime(), scope, resourceOwner.getAuthLevel());
+        
+        // Note: use the default implementation from TokenResponseTypeHandler 6.0.0.3
+        GrantSet grantSet = this.tokenStore.getGrantSet(clientId, resourceOwner.getId(), request, false);
+    
+        Grant grant = this.tokenStore.createGrant(grantSet, scope, request);
+        this.tokenStore.saveNewGrant(grant, request);
+    
+        AccessToken generatedAccessToken = this.tokenStore.createAccessToken(grantSet, grant, "token", tokenType, nonce, claims, request, resourceOwner.getAuthTime(), scope, resourceOwner.getAuthLevel());
+        this.tokenStore.saveNewAccessToken(generatedAccessToken, request);
+    
+        this.tokenStore.saveGrantSet(grantSet, request);
+    
         return new AbstractMap.SimpleEntry("access_token", generatedAccessToken);
     }
 
