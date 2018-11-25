@@ -31,6 +31,7 @@ public class ContactListScopeValidator implements ScopeValidator {
 
     private static final Debug DEBUG = Debug.getInstance("ContactListScopeValidator");
 
+    // DONE Ch5L1Ex2: add the @Inject annotation
     @Inject
     private OpenAMScopeValidator openAMScopeValidator;
 
@@ -105,9 +106,9 @@ public class ContactListScopeValidator implements ScopeValidator {
             throws UnauthorizedClientException, NotFoundException, ServerException, InvalidRequestException {
         UserInfoClaims userInfoClaims = openAMScopeValidator.getUserInfo(clientRegistration, token, request);
         DEBUG.message("getUserInfo claims provided by openAMScopeValidator: " + userInfoClaims.getValues() + ", composite scopes: " + userInfoClaims.getCompositeScopes());
-        //DONE lab11: Add a new claim called "expires_in" which should cointain the token's time to live in seconds.
-        //DONE lab11: If the token is not null, calculate the TTL: (token.getExpiryTime() - System.currentTimeMillis()) / 1000
-        //DONE lab11: Put this value to userInfoClaims.getValues() with the key "expires_in".
+        //DONE Ch5L1Ex2: Add a new claim called "expires_in" which should cointain the token's time to live in seconds.
+        //DONE Ch5L1Ex2: If the token is not null, calculate the TTL: (token.getExpiryTime() - System.currentTimeMillis()) / 1000
+        //DONE Ch5L1Ex2: Put this value to userInfoClaims.getValues() with the key "expires_in".
         if (token != null) {
             userInfoClaims.getValues().put("expires_in", (token.getExpiryTime() - System.currentTimeMillis()) / 1000);
             DEBUG.message("getUserInfo modified claim set: " + userInfoClaims.getValues());
