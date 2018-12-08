@@ -90,12 +90,10 @@ public class ContactListTokenResponseTypeHandler implements ResponseTypeHandler 
             claims = request.getParameter(OAuth2Constants.Custom.CLAIMS);
             Set<String> privileges = ContactListPrivilegesEvaluator.evaluatePrivileges(request);
             claims = Claims.parse(claims)
-                    //DONE Ch5L1Ex2: Put a new claim definition named "contactlist-privileges" into the "userinfo" branch - this is needed when the userinfo endpoint is used.
-                    //DONE Ch5L1Ex2: Provide the user's privilege set as the hard-coded value for the "contactlist-privileges" claim.
-                    //DONE Ch5L1Ex2: Place the same claim definition to the "id_token" branch  - this is relevant during the id_token generation.
-                    //DONE Ch5L1Ex2: Hint: use the setClaimValues method of the Claims class to add
-                    .setClaimValues("userinfo", "contactlist-privileges", privileges)
-                    .setClaimValues("id_token", "contactlist-privileges", privileges)
+                    //TODO Ch5L1Ex2: Put a new claim definition named "contactlist-privileges" into the "userinfo" branch - this is needed when the userinfo endpoint is used.
+                    //TODO Ch5L1Ex2: Provide the user's privilege set as the hard-coded value for the "contactlist-privileges" claim.
+                    //TODO Ch5L1Ex2: Place the same claim definition to the "id_token" branch  - this is relevant during the id_token generation.
+                    //TODO Ch5L1Ex2: Hint: use the setClaimValues method of the Claims class to add
                     .toString();
             DEBUG.message("Replaced claims string: " + claims);
         } catch (SSOException | EntitlementException | JSONException ex) {
