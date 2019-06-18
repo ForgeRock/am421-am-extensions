@@ -1,29 +1,31 @@
 package com.forgerock.edu.oauth2;
 
 import com.forgerock.edu.policy.ContactListPrivilegesEvaluator;
-import com.forgerock.edu.util.OAuth2Util;
 import com.iplanet.sso.SSOException;
-import com.iplanet.sso.SSOToken;
 import com.sun.identity.entitlement.EntitlementException;
 import com.sun.identity.shared.debug.Debug;
-import java.util.AbstractMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import org.forgerock.oauth2.core.*;
-import org.forgerock.openam.oauth2.OAuth2Constants;
-import static org.forgerock.openam.oauth2.OAuth2Constants.AuthorizationEndpoint.TOKEN;
-import static org.forgerock.openam.oauth2.OAuth2Constants.Params.ACCESS_TOKEN;
-
+import org.forgerock.oauth2.core.AccessToken;
+import org.forgerock.oauth2.core.Grant;
+import org.forgerock.oauth2.core.OAuth2Request;
+import org.forgerock.oauth2.core.ResourceOwner;
+import org.forgerock.oauth2.core.ResponseTypeHandler;
+import org.forgerock.oauth2.core.Token;
+import org.forgerock.oauth2.core.TokenResponseTypeHandler;
 import org.forgerock.oauth2.core.exceptions.InvalidClientException;
 import org.forgerock.oauth2.core.exceptions.NotFoundException;
 import org.forgerock.oauth2.core.exceptions.ServerException;
+import org.forgerock.openam.oauth2.OAuth2Constants;
 import org.forgerock.openam.oauth2.token.TokenStore;
-import org.forgerock.openam.oauth2.token.grantset.GrantSet;
 import org.json.JSONException;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.AbstractMap;
+import java.util.Map;
+import java.util.Set;
+
+import static org.forgerock.openam.oauth2.OAuth2Constants.AuthorizationEndpoint.TOKEN;
+import static org.forgerock.openam.oauth2.OAuth2Constants.Params.ACCESS_TOKEN;
 
 /**
  * This ResponseTypeHandler implementation handles the response type named
@@ -64,18 +66,16 @@ public class ContactListTokenResponseTypeHandler implements ResponseTypeHandler 
             claims = addContactListPrivilegesAsClaim(request, claims);
         }
         
-        // Note: use the default implementation from TokenResponseTypeHandler 6.0.0.3
-        GrantSet grantSet = this.tokenStore.getGrantSet(clientId, resourceOwner.getId(), request, false);
-    
-        Grant grant = this.tokenStore.createGrant(grantSet, scope, request);
+        // Note: use the default implementation from TokenResponseTypeHandler 6.5.1
+        request.setContextFor(OAuth2Request.ContextKey.NEW_GRANT_SET, false);
+        request.setContextFor(OAuth2Request.ContextKey.CLIENT_ID, clientId);
+        request.setContextFor(OAuth2Request.ContextKey.RESOURCE_OWNER, resourceOwner.getId());
+        Grant grant = this.tokenStore.createGrant(clientId, resourceOwner.getId(), scope, request);
         this.tokenStore.saveNewGrant(grant, request);
-    
-        AccessToken generatedAccessToken = this.tokenStore.createAccessToken(grantSet, grant, "token", tokenType, nonce, claims, request, resourceOwner.getAuthTime(), scope, resourceOwner.getAuthLevel());
+        AccessToken generatedAccessToken = this.tokenStore.createAccessToken(grant, TOKEN, tokenType, nonce, claims, request, resourceOwner.getAuthTime(), scope, resourceOwner.getAuthLevel());
         this.tokenStore.saveNewAccessToken(generatedAccessToken, request);
-    
-        this.tokenStore.saveGrantSet(grantSet, request);
-    
-        return new AbstractMap.SimpleEntry("access_token", generatedAccessToken);
+        this.tokenStore.saveGrantSet(request);
+        return new AbstractMap.SimpleEntry(ACCESS_TOKEN, generatedAccessToken);
     }
 
     /**
