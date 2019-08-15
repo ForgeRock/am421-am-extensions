@@ -1,13 +1,13 @@
 package com.forgerock.edu.oauth2;
 
 import com.forgerock.edu.policy.ContactListPrivilegesEvaluator;
-import com.forgerock.edu.util.OAuth2Util;
+//import com.forgerock.edu.util.OAuth2Util;
 import com.iplanet.sso.SSOException;
-import com.iplanet.sso.SSOToken;
+//import com.iplanet.sso.SSOToken;
 import com.sun.identity.entitlement.EntitlementException;
 import com.sun.identity.shared.debug.Debug;
 import java.util.AbstractMap;
-import java.util.HashSet;
+//import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
@@ -15,14 +15,14 @@ import javax.inject.Singleton;
 
 import org.forgerock.oauth2.core.*;
 import org.forgerock.openam.oauth2.OAuth2Constants;
-import static org.forgerock.openam.oauth2.OAuth2Constants.AuthorizationEndpoint.TOKEN;
+//import static org.forgerock.openam.oauth2.OAuth2Constants.AuthorizationEndpoint.TOKEN;
 import static org.forgerock.openam.oauth2.OAuth2Constants.Params.ACCESS_TOKEN;
 
 import org.forgerock.oauth2.core.exceptions.InvalidClientException;
 import org.forgerock.oauth2.core.exceptions.NotFoundException;
 import org.forgerock.oauth2.core.exceptions.ServerException;
 import org.forgerock.openam.oauth2.token.TokenStore;
-import org.forgerock.openam.oauth2.token.grantset.GrantSet;
+//import org.forgerock.openam.oauth2.token.grantset.GrantSet;
 import org.json.JSONException;
 
 /**
@@ -64,17 +64,18 @@ public class ContactListTokenResponseTypeHandler implements ResponseTypeHandler 
             claims = addContactListPrivilegesAsClaim(request, claims);
         }
         // TODO: Investigate and fix the next two lines.
-        GrantSet grantSet = this.tokenStore.getGrantSet(clientId, resourceOwner.getId(), request, true);
-        Grant grant = this.tokenStore.createGrant(request, grantSet, clientId);
-                   //this.tokenStore.createGrant(clientId, resourceOwner.getId(), scope, request);
-        AccessToken generatedAccessToken = this.tokenStore.createAccessToken(grantSet, grant, tokenType, redirectUri, nonce, claims, request, resourceOwner.getAuthTime(), scope, resourceOwner.getAuthLevel());
-                                         //this.tokenStore.createAccessToken(grant, "token", tokenType, redirectUri, nonce, claims, request, resourceOwner.getAuthTime(), scope, resourceOwner.getAuthLevel());
-        return new AbstractMap.SimpleEntry("access_token", generatedAccessToken);
+        //GrantSet grantSet = this.tokenStore.getGrantSet(clientId, resourceOwner.getId(), request, true);
+        Grant grant = //this.tokenStore.createGrant(request, grantSet, clientId);
+            this.tokenStore.createGrant(clientId, resourceOwner.getId(), scope, request);
+        AccessToken generatedAccessToken = //this.tokenStore.createAccessToken(grantSet, grant, tokenType, redirectUri, nonce, claims, request, resourceOwner.getAuthTime(), scope, resourceOwner.getAuthLevel());
+            //this.tokenStore.createAccessToken(grant, "token", tokenType, redirectUri, nonce, claims, request, resourceOwner.getAuthTime(), scope, resourceOwner.getAuthLevel());
+            this.tokenStore.createAccessToken(grant, tokenType, ACCESS_TOKEN, nonce, claims, request, scope);
+                return new AbstractMap.SimpleEntry("access_token", generatedAccessToken);
     }
 
     /**
      * Evaluates the user's privileges and adds it into the claims structure.
-     * @param request The current OAuth2Request
+     * @param request The current`` OAuth2Request
      * @param claims The initial claims JSON structure as a String.
      * @return The modified claims JSON as a String.
      */
