@@ -179,4 +179,9 @@ public class ContactListScopeValidator implements ScopeValidator {
         return additionalData;
     }
 
+    @Override
+    public Set<String> validateBackChannelAuthorizationScope(ClientRegistration cr, Set<String> set, OAuth2Request oar) throws InvalidScopeException, ServerException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
 }
