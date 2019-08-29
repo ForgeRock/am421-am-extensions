@@ -23,6 +23,7 @@ import javax.inject.Singleton;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Set;
+import org.forgerock.oauth2.core.exceptions.UnauthorizedClientException;
 
 import static org.forgerock.openam.oauth2.OAuth2Constants.AuthorizationEndpoint.TOKEN;
 import static org.forgerock.openam.oauth2.OAuth2Constants.Params.ACCESS_TOKEN;
@@ -58,7 +59,7 @@ public class ContactListTokenResponseTypeHandler implements ResponseTypeHandler 
      * {@inheritDoc}
      */
     @Override
-    public Map.Entry<String, Token> handle(String tokenType, Set<String> scope, ResourceOwner resourceOwner, String clientId, String redirectUri, String nonce, OAuth2Request request, String codeChallenge, String codeChallengeMethod) throws InvalidClientException, ServerException, NotFoundException {
+    public Map.Entry<String, Token> handle(String tokenType, Set<String> scope, ResourceOwner resourceOwner, String clientId, String redirectUri, String nonce, OAuth2Request request, String codeChallenge, String codeChallengeMethod) throws InvalidClientException, ServerException, NotFoundException, UnauthorizedClientException {
         String claims = null;
         //only pass the claims param if this is a request to the authorize endpoint
         if (request.getParameter(OAuth2Constants.Params.CODE) == null) {
