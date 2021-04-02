@@ -128,11 +128,11 @@ public class SelectedRoleCondition implements EntitlementCondition {
                         ConditionDecision.newFailureBuilder();
                 
                 if (isMemberOfRequiredRole(token)) {
-                    String requiredAuthScheme = realm + ISAuthConstants.COLON + "selectRole";
+                    String requiredAuthScheme = realm + ISAuthConstants.COLON + "testSelectRole";
                     
                     //Adding advice to the condition decision
                     Map<String, Set<String>> advices = new HashMap<>();
-                    advices.put(ConditionConstants.AUTH_SCHEME_CONDITION_ADVICE,
+                    advices.put(ConditionConstants.AUTHENTICATE_TO_SERVICE_CONDITION_ADVICE,
                             CollectionUtils.asSet(requiredAuthScheme));
                     decisionBuilder.setAdvice(advices);
                 }
@@ -149,9 +149,9 @@ public class SelectedRoleCondition implements EntitlementCondition {
      * Checks whether the current user is the member of the
      * {@link #requiredRole} regardless of the user's {@code selectedRole}.
      * <p>
-     * {@link SelectRole} shares a special property in {@code SSOToken} called
+     * {@code SelectRoleNode} shares a special property in {@code SSOToken} called
      * {@code selectableRoles} (the name of this property is exposed in
-     * {@link SelectRole#SELECTABLE_ROLES_PROPERTY}). This contains all the
+     * {@link #SELECTABLE_ROLES_PROPERTY}). This contains all the
      * roles which can be selected by the user (because the user has the
      * corresponding group memberships).
      * </p>

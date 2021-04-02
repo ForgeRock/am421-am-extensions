@@ -1,18 +1,21 @@
 package com.forgerock.edu.oauth2;
 
+import com.forgerock.edu.policy.ContactListPrivilegesEvaluator;
+import com.forgerock.edu.util.OAuth2Util;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.iplanet.sso.SSOException;
+import com.iplanet.sso.SSOToken;
+import com.sun.identity.entitlement.EntitlementException;
 import com.sun.identity.shared.debug.Debug;
-import java.util.Map;
-import java.util.Set;
-import org.forgerock.oauth2.core.AccessToken;
-import org.forgerock.oauth2.core.ClientRegistration;
-import org.forgerock.oauth2.core.OAuth2Request;
-import org.forgerock.oauth2.core.ScopeValidator;
-import org.forgerock.oauth2.core.Token;
-import org.forgerock.oauth2.core.UserInfoClaims;
+import org.forgerock.oauth2.core.*;
 import org.forgerock.oauth2.core.exceptions.*;
 import org.forgerock.openam.oauth2.OpenAMScopeValidator;
+import org.json.JSONException;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * ScopeValidator implementation that handles special scopes representing
@@ -84,7 +87,7 @@ public class ContactListScopeValidator implements ScopeValidator {
      * case the {@code token} parameter contains the access token.
      * </li>
      * </ul>
-     *
+     * <p>
      * In addition to the behavior of
      * {@link OpenAMScopeValidator#getUserInfo(ClientRegistration, AccessToken, OAuth2Request)}
      * method, this implementation adds fields named {@code privileges} and
@@ -92,7 +95,7 @@ public class ContactListScopeValidator implements ScopeValidator {
      * assigned scopes, the current access token's expiry time is converted into
      * seconds and exposed as a field named {@code expires_in}.
      *
-     * @param token The access token.
+     * @param token   The access token.
      * @param request The OAuth2 request.
      * @return A {@code Map<String, Object>} of the resource owner's
      * information.
@@ -142,11 +145,11 @@ public class ContactListScopeValidator implements ScopeValidator {
      * , which adds the token_id field with the signed JWT tokenID if the
      * {@code openid} scope is assigned to the current access token.
      *
-     * @param token The access token.
+     * @param token   The access token.
      * @param request The OAuth2 request.
-     * @throws ServerException If any internal server error occurs.
+     * @throws ServerException        If any internal server error occurs.
      * @throws InvalidClientException If either the request does not contain the
-     * client's id or the client fails to be authenticated.
+     *                                client's id or the client fails to be authenticated.
      */
     @Override
     public void additionalDataToReturnFromTokenEndpoint(
@@ -166,8 +169,8 @@ public class ContactListScopeValidator implements ScopeValidator {
      * Provided as an extension point to allow the OAuth2 provider to return
      * additional data from an authorization request. Returns an empty map.
      *
-     * @param tokens The tokens that will be returned from the authorization
-     * call.
+     * @param tokens  The tokens that will be returned from the authorization
+     *                call.
      * @param request The OAuth2 request.
      * @return A {@code Map<String, String>} of the additional data to return.
      */
@@ -175,7 +178,7 @@ public class ContactListScopeValidator implements ScopeValidator {
     public Map<String, String> additionalDataToReturnFromAuthorizeEndpoint(
             Map<String, Token> tokens,
             OAuth2Request request) {
-        Map<String, String> additionalData = 
+        Map<String, String> additionalData =
                 openAMScopeValidator.additionalDataToReturnFromAuthorizeEndpoint(tokens, request);
         DEBUG.message("additionalDataToReturnFromAuthorizeEndpoint: " + additionalData);
         return additionalData;
@@ -186,4 +189,38 @@ public class ContactListScopeValidator implements ScopeValidator {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    @Override
+    public void modifyAccessToken(AccessToken accessToken, OAuth2Request request) throws NotFoundException, ServerException, UnauthorizedClientException {
+        openAMScopeValidator.modifyAccessToken(accessToken, request);
+        SSOToken ssoToken = OAuth2Util.extractSSOToken(request);
+        if (ssoToken != null) {
+            hardCodeClaimValues(accessToken, ssoToken);
+        }
+    }
+
+    private void hardCodeClaimValues(AccessToken accessToken, SSOToken ssoToken) {
+        try {
+            String claims = accessToken.getClaims();
+            DEBUG.message("Original claims string: " + claims);
+            String selectedRole = ssoToken.getProperty("selectedRole");
+            if (DEBUG.messageEnabled()) {
+                DEBUG.message("selectedRole: " + selectedRole);
+            }
+            Set<String> privileges = ContactListPrivilegesEvaluator.getContactListPrivileges(ssoToken);
+            if (DEBUG.messageEnabled()) {
+                DEBUG.message("privileges: " + privileges);
+            }
+
+            claims = Claims.parse(claims)
+                    .setClaimValue("userinfo", "selectedRole", selectedRole)
+                    .setClaimValue("id_token", "selectedRole", selectedRole)
+                    .setClaimValues("userinfo", "contactlist-privileges", privileges)
+                    .setClaimValues("id_token", "contactlist-privileges", privileges)
+                    .toString();
+            accessToken.setClaims(claims);
+            DEBUG.message("Replaced claims string: " + claims);
+        } catch (SSOException | EntitlementException | JSONException ex) {
+            DEBUG.error("Error during extending claims: ", ex);
+        }
+    }
 }
