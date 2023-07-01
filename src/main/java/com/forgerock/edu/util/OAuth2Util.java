@@ -20,7 +20,7 @@ public class OAuth2Util {
 
     public static SSOToken extractSSOToken(OAuth2Request request) {
         try {
-            final HttpServletRequest httpServletRequest = ServletUtils.getRequest((Request) request.getRequest());
+            final HttpServletRequest httpServletRequest = request.getServletRequest(); //was: ServletUtils.getRequest((Request) request.getRequest());
             final SSOTokenManager tokenManager = SSOTokenManager.getInstance();
             //extracting SSOToken from HttpServletRequest:
             return tokenManager.createSSOToken(httpServletRequest);

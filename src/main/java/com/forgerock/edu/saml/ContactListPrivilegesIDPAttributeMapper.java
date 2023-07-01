@@ -3,14 +3,16 @@ package com.forgerock.edu.saml;
 import com.forgerock.edu.policy.ContactListPrivilegesEvaluator;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.entitlement.EntitlementException;
+import com.sun.identity.saml2.assertion.AssertionFactory;
+import com.sun.identity.saml2.plugins.AttributeMapperPluginHelper;
 import com.sun.identity.saml2.plugins.DefaultLibraryIDPAttributeMapper;
-import java.util.List;
+
+import java.util.*;
+
 import com.sun.identity.saml2.assertion.Attribute;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.debug.Debug;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * Adds contactList privileges as SAML2 Attributes, if
@@ -71,12 +73,9 @@ public class ContactListPrivilegesIDPAttributeMapper extends DefaultLibraryIDPAt
                 try {
                     privilegeValues = ContactListPrivilegesEvaluator.getContactListPrivileges((SSOToken) session);
                     for (String samlAttributeName : samlAttributeNames) {
-                        Attribute attribute = getSAMLAttribute(samlAttributeName,
+                        Attribute attribute = (new AttributeMapperPluginHelper()).createSAMLAttribute(samlAttributeName,
                                 null,
-                                privilegeValues,
-                                hostEntityID,
-                                remoteEntityID,
-                                realm);
+                                privilegeValues);
                         attributes.add(attribute);
                     }
                 } catch (EntitlementException ex) {
@@ -87,4 +86,5 @@ public class ContactListPrivilegesIDPAttributeMapper extends DefaultLibraryIDPAt
 
         return attributes;
     }
+
 }

@@ -14,18 +14,20 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.forgerock.oauth2.core.*;
+import org.forgerock.oauth2.core.exceptions.*;
+import org.forgerock.oauth2.core.plugins.AccessTokenEnricher;
+import org.forgerock.oauth2.core.plugins.registry.DefaultAccessTokenEnricher;
 import org.forgerock.openam.oauth2.OAuth2Constants;
 //import static org.forgerock.openam.oauth2.OAuth2Constants.AuthorizationEndpoint.TOKEN;
 import static org.forgerock.openam.oauth2.OAuth2Constants.Params.ACCESS_TOKEN;
 
-import org.forgerock.oauth2.core.exceptions.InvalidClientException;
-import org.forgerock.oauth2.core.exceptions.NotFoundException;
-import org.forgerock.oauth2.core.exceptions.ServerException;
-import org.forgerock.oauth2.core.exceptions.UnauthorizedClientException;
 import static org.forgerock.openam.oauth2.OAuth2Constants.AuthorizationEndpoint.TOKEN;
 import static org.forgerock.openam.oauth2.OAuth2Constants.Params.ACCESS_TOKEN;
+
+import org.forgerock.openam.oauth2.token.BaseTokenStore;
 import org.forgerock.openam.oauth2.token.TokenStore;
 //import org.forgerock.openam.oauth2.token.grantset.GrantSet;
+import org.forgerock.openidconnect.OpenIDTokenIssuer;
 import org.json.JSONException;
 
 /**
@@ -59,7 +61,7 @@ public class ContactListTokenResponseTypeHandler implements ResponseTypeHandler 
      * {@inheritDoc}
      */
     @Override
-    public Map.Entry<String, Token> handle(String tokenType, Set<String> scope, ResourceOwner resourceOwner, String clientId, String redirectUri, String nonce, OAuth2Request request, String codeChallenge, String codeChallengeMethod) throws InvalidClientException, ServerException, NotFoundException, UnauthorizedClientException {
+    public Map.Entry<String, Token> handle(String tokenType, Set<String> scope, ResourceOwner resourceOwner, String clientId, String redirectUri, String nonce, OAuth2Request request, String codeChallenge, String codeChallengeMethod) throws InvalidClientException, ServerException, NotFoundException, UnauthorizedClientException, InvalidRequestException {
         String claims = null;
         //only pass the claims param if this is a request to the authorize endpoint
         if (request.getParameter(OAuth2Constants.Params.CODE) == null) {
@@ -71,9 +73,12 @@ public class ContactListTokenResponseTypeHandler implements ResponseTypeHandler 
         request.setContextFor(OAuth2Request.ContextKey.NEW_GRANT_SET, false);
         request.setContextFor(OAuth2Request.ContextKey.CLIENT_ID, clientId);
         request.setContextFor(OAuth2Request.ContextKey.RESOURCE_OWNER, resourceOwner.getId());
-        Grant grant = this.tokenStore.createGrant(clientId, resourceOwner.getId(), scope, request);
+        Grant grant = this.tokenStore.createGrant(clientId, resourceOwner.getId(), scope, request, BaseTokenStore.CacheStrategy.REQUEST);
         this.tokenStore.saveNewGrant(grant, request);
-        AccessToken generatedAccessToken = this.tokenStore.createAccessToken(grant, TOKEN, tokenType, nonce, claims, request, resourceOwner.getAuthTime(), scope, resourceOwner.getAuthLevel());
+
+        AccessToken generatedAccessToken = this.tokenStore.createAccessToken(grant, TOKEN, tokenType, nonce, claims, request, scope, null, resourceOwner.getAuthTime(), resourceOwner.getAuthLevel());
+
+       // was:  AccessToken generatedAccessToken = this.tokenStore.createAccessToken(grant, TOKEN, tokenType, nonce, claims, request, resourceOwner.getAuthTime(), scope, resourceOwner.getAuthLevel());
         this.tokenStore.saveNewAccessToken(generatedAccessToken, request);
         this.tokenStore.saveGrantSet(request);
         return new AbstractMap.SimpleEntry(ACCESS_TOKEN, generatedAccessToken);

@@ -9,5 +9,6 @@ public class SelectedRoleEntitlementModule implements EntitlementModule {
     public void registerCustomTypes(EntitlementRegistry entitlementRegistry) {
         entitlementRegistry.registerConditionType("SelectedRoleCondition", SelectedRoleCondition.class);
         entitlementRegistry.registerDecisionCombiner("KeepActionValuesWithAdviceDenyOverride", KeepActionValuesWithAdviceDenyOverride.class);
+
     }
 }

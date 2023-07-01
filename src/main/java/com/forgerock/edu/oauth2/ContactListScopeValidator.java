@@ -195,7 +195,8 @@ public class ContactListScopeValidator implements ScopeValidator {
      */
     Set<String> evaluatePrivileges(OAuth2Request request) throws SSOException, EntitlementException {
         //extracting HttpServletRequest from OAuth2Request:
-        final HttpServletRequest httpServletRequest = ServletUtils.getRequest((Request) request.getRequest());
+        final HttpServletRequest httpServletRequest = request.getServletRequest();
+                // was: ServletUtils.getRequest((Request) request.getRequest());
 
         final SSOTokenManager tokenManager = SSOTokenManager.getInstance();
         //extracting SSOToken from HttpServletRequest:
