@@ -17,7 +17,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class SelectedRoleExposer implements AMPostAuthProcessInterface {
 
-    private static Debug DEBUG = Debug.getInstance("SelectedRoleExposer");
+    private static final Debug DEBUG = Debug.getInstance("SelectedRoleExposer");
 
     @Override
     public void onLoginSuccess(Map requestParamsMap, HttpServletRequest request, HttpServletResponse response, SSOToken ssoToken) {

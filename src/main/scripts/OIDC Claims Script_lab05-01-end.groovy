@@ -49,7 +49,7 @@ def fromSet = { claim, attr ->
     } else if (attr != null && attr.size() > 1){
         attr
     } else if (logger.warningEnabled()) {
-        logger.warning("OpenAMScopeValidator.getUserInfo(): Got an empty result for claim=$claim");
+        logger.warning("OpenAMScopeValidator.getUserInfo(): Got an empty result for claim=$claim")
     }
 }
 
@@ -81,7 +81,7 @@ claimAttributes = [
           }
         },
         "contactlist-privileges" : { claim, identity, requested -> 
-            logger.message("Claim: " + claim + ", requested: " + requested);
+            logger.message("Claim: " + claim + ", requested: " + requested)
             if (requested != null) {
                 //The values defined for the contactlist-privileges claim in the claims parameter 
                 //is received in the requested variable
@@ -122,11 +122,11 @@ def computeClaim = { claim, requestedValues ->
         [ claim, claimAttributes.get(claim)(claim, identity, requestedValues) ]
     } catch (IdRepoException e) {
         if (logger.warningEnabled()) {
-            logger.warning("OpenAMScopeValidator.getUserInfo(): Unable to retrieve attribute=$attribute", e);
+            logger.warning("OpenAMScopeValidator.getUserInfo(): Unable to retrieve attribute=$attribute", e)
         }
     } catch (SSOException e) {
         if (logger.warningEnabled()) {
-            logger.warning("OpenAMScopeValidator.getUserInfo(): Unable to retrieve attribute=$attribute", e);
+            logger.warning("OpenAMScopeValidator.getUserInfo(): Unable to retrieve attribute=$attribute", e)
         }
     }
 }
