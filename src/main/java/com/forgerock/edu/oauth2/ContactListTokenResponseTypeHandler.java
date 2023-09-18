@@ -1,34 +1,29 @@
 package com.forgerock.edu.oauth2;
 
 import com.forgerock.edu.policy.ContactListPrivilegesEvaluator;
-//import com.forgerock.edu.util.OAuth2Util;
 import com.iplanet.sso.SSOException;
-//import com.iplanet.sso.SSOToken;
 import com.sun.identity.entitlement.EntitlementException;
 import com.sun.identity.shared.debug.Debug;
-import java.util.AbstractMap;
-//import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.forgerock.oauth2.core.*;
 import org.forgerock.oauth2.core.exceptions.*;
-import org.forgerock.oauth2.core.plugins.AccessTokenEnricher;
-import org.forgerock.oauth2.core.plugins.registry.DefaultAccessTokenEnricher;
 import org.forgerock.openam.oauth2.OAuth2Constants;
-//import static org.forgerock.openam.oauth2.OAuth2Constants.AuthorizationEndpoint.TOKEN;
-import static org.forgerock.openam.oauth2.OAuth2Constants.Params.ACCESS_TOKEN;
-
-import static org.forgerock.openam.oauth2.OAuth2Constants.AuthorizationEndpoint.TOKEN;
-import static org.forgerock.openam.oauth2.OAuth2Constants.Params.ACCESS_TOKEN;
-
 import org.forgerock.openam.oauth2.token.BaseTokenStore;
 import org.forgerock.openam.oauth2.token.TokenStore;
-//import org.forgerock.openam.oauth2.token.grantset.GrantSet;
-import org.forgerock.openidconnect.OpenIDTokenIssuer;
 import org.json.JSONException;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.AbstractMap;
+import java.util.Map;
+import java.util.Set;
+
+import static org.forgerock.oauth2.core.OAuth2Request.ContextKey.CLIENT_ID;
+import static org.forgerock.oauth2.core.OAuth2Request.ContextKey.NEW_GRANT_SET;
+import static org.forgerock.oauth2.core.OAuth2Request.ContextKey.RESOURCE_OWNER;
+import static org.forgerock.openam.oauth2.OAuth2Constants.AuthorizationEndpoint.TOKEN;
+import static org.forgerock.openam.oauth2.OAuth2Constants.Custom.CLAIMS;
+import static org.forgerock.openam.oauth2.OAuth2Constants.Params.ACCESS_TOKEN;
+import static org.forgerock.openam.oauth2.OAuth2Constants.Params.CODE;
 
 /**
  * This ResponseTypeHandler implementation handles the response type named
@@ -64,21 +59,21 @@ public class ContactListTokenResponseTypeHandler implements ResponseTypeHandler 
     public Map.Entry<String, Token> handle(String tokenType, Set<String> scope, ResourceOwner resourceOwner, String clientId, String redirectUri, String nonce, OAuth2Request request, String codeChallenge, String codeChallengeMethod) throws InvalidClientException, ServerException, NotFoundException, UnauthorizedClientException, InvalidRequestException {
         String claims = null;
         //only pass the claims param if this is a request to the authorize endpoint
-        if (request.getParameter(OAuth2Constants.Params.CODE) == null) {
-            claims = request.getParameter(OAuth2Constants.Custom.CLAIMS);
+        if (request.getParameter(CODE) == null) {
+            claims = request.getParameter(CLAIMS);
             claims = addContactListPrivilegesAsClaim(request, claims);
         }
         
         // Note: use the default implementation from TokenResponseTypeHandler 6.5.1
-        request.setContextFor(OAuth2Request.ContextKey.NEW_GRANT_SET, false);
-        request.setContextFor(OAuth2Request.ContextKey.CLIENT_ID, clientId);
-        request.setContextFor(OAuth2Request.ContextKey.RESOURCE_OWNER, resourceOwner.getId());
+        request.setContextFor(NEW_GRANT_SET, false);
+        request.setContextFor(CLIENT_ID, clientId);
+        request.setContextFor(RESOURCE_OWNER, resourceOwner.getUniqueId());
         Grant grant = this.tokenStore.createGrant(clientId, resourceOwner.getId(), scope, request, BaseTokenStore.CacheStrategy.REQUEST);
         this.tokenStore.saveNewGrant(grant, request);
 
-        AccessToken generatedAccessToken = this.tokenStore.createAccessToken(grant, TOKEN, tokenType, nonce, claims, request, scope, null, resourceOwner.getAuthTime(), resourceOwner.getAuthLevel());
+        AccessToken generatedAccessToken = this.tokenStore.createAccessToken(grant, TOKEN, tokenType, nonce, claims, request, scope, (__, ___) -> {
+        }, resourceOwner.getAuthTime(), resourceOwner.getAuthLevel());
 
-       // was:  AccessToken generatedAccessToken = this.tokenStore.createAccessToken(grant, TOKEN, tokenType, nonce, claims, request, resourceOwner.getAuthTime(), scope, resourceOwner.getAuthLevel());
         this.tokenStore.saveNewAccessToken(generatedAccessToken, request);
         this.tokenStore.saveGrantSet(request);
         return new AbstractMap.SimpleEntry(ACCESS_TOKEN, generatedAccessToken);
@@ -94,7 +89,7 @@ public class ContactListTokenResponseTypeHandler implements ResponseTypeHandler 
     String addContactListPrivilegesAsClaim(OAuth2Request request, String claims) {
         try {
             DEBUG.message("Original claims string: " + claims);
-            claims = request.getParameter(OAuth2Constants.Custom.CLAIMS);
+            claims = request.getParameter(CLAIMS);
             Set<String> privileges = ContactListPrivilegesEvaluator.evaluatePrivileges(request);
             claims = Claims.parse(claims)
                     //DONE lab05_01: Put a new claim definition named "contactlist-privileges" into the "userinfo" branch - this is needed when the userinfo endpoint is used.
