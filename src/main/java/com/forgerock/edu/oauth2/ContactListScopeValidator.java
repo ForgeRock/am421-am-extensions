@@ -135,11 +135,15 @@ public class ContactListScopeValidator implements ScopeValidator {
             throws UnauthorizedClientException, NotFoundException, ServerException, InvalidRequestException {
         DEBUG.message("getUserInfo " + request);
         UserInfoClaims userInfoClaims = openAMScopeValidator.getUserInfo(clientRegistration, token, request);
+        DEBUG.message("getUserInfo claims provided by openAMScopeValidator: " + userInfoClaims.getValues() + ", composite scopes: " + userInfoClaims.getCompositeScopes());
+        //DONE Ch5L1Ex2Task3: Add a new claim called "expires_in" which should cointain the token's time to live (TTL) in seconds.
+        //DONE Ch5L1Ex2Task3: If the token is not null, calculate the TTL: (token.getExpiryTime() - System.currentTimeMillis()) / 1000
+        //DONE Ch5L1Ex2Task3: Put this value to userInfoClaims.getValues() with the key "expires_in".
         if (token != null) {
             List<String> privileges = extractPrivileges(token);
             userInfoClaims.getValues().put("contactlist-privileges", privileges);
-            // TODO 05_01: Add the expires_in property value to the user claim info in seconds.
             userInfoClaims.getValues().put("expires_in", (token.getExpiryTime() - System.currentTimeMillis()) / 1000);
+            DEBUG.message("getUserInfo modified claim set: " + userInfoClaims.getValues());
         }
         return userInfoClaims;
     }
