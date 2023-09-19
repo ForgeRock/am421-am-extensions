@@ -1,14 +1,14 @@
 package com.forgerock.edu.policy;
 
-import com.sun.identity.entitlement.Application;
-import com.sun.identity.entitlement.Entitlement;
-import com.sun.identity.entitlement.EntitlementException;
-import com.sun.identity.entitlement.ResourceSaveIndexes;
-import com.sun.identity.entitlement.ResourceSearchIndexes;
+import com.google.inject.Inject;
+import com.sun.identity.entitlement.*;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import javax.security.auth.Subject;
+
+import com.sun.identity.entitlement.interfaces.ResourceName;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -18,8 +18,11 @@ import org.json.JSONObject;
  *
  * @author vrg
  */
-public class AdvicesHiderEntitlementWrapper extends Entitlement {
+public class AdvicesHiderEntitlementWrapper implements Entitlement {
+
+    @Inject
     private final Entitlement entitlement;
+
 
     public AdvicesHiderEntitlementWrapper(Entitlement entitlement) {
         this.entitlement = entitlement;
@@ -199,8 +202,18 @@ public class AdvicesHiderEntitlementWrapper extends Entitlement {
     }
 
     @Override
+    public String getIndexDescriptor(Subject subject, String s) throws EntitlementException {
+        return entitlement.getIndexDescriptor(subject, s);
+    }
+
+    @Override
     public void clearCache() {
         entitlement.clearCache();
+    }
+
+    @Override
+    public ResourceName getResourceComparator(Subject subject, String s) throws EntitlementException {
+        return null;
     }
 
     @Override

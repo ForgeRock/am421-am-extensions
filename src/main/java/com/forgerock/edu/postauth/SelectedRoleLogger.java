@@ -7,6 +7,7 @@ import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.shared.debug.Debug;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -19,19 +20,15 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class SelectedRoleLogger implements AMPostAuthProcessInterface {
 
-    private static Debug DEBUG = Debug.getInstance("SelectedRoleLogger");
+    private static final Debug DEBUG = Debug.getInstance("SelectedRoleLogger");
 
     @Override
     public void onLoginSuccess(Map requestParamsMap, HttpServletRequest request, HttpServletResponse response, SSOToken ssoToken) {
-        try {
-            String gotoParam = (String) requestParamsMap.get(ISAuthConstants.GOTO_PARAM);
-            DEBUG.message("LOGIN SUCCESS, orig goto=" +  gotoParam);
-            gotoParam = "http://other.com/?goto=" + URLEncoder.encode(gotoParam, "ISO-8859-1");
-            DEBUG.message("LOGIN SUCCESS, request.goto = " + gotoParam);
-            requestParamsMap.put(ISAuthConstants.GOTO_PARAM, gotoParam);
-        } catch (UnsupportedEncodingException ex) {
-            DEBUG.error("LOGIN SUCCESS, unsuuported encoding", ex);
-        }
+        String gotoParam = (String) requestParamsMap.get(ISAuthConstants.GOTO_PARAM);
+        DEBUG.message("LOGIN SUCCESS, orig goto=" +  gotoParam);
+        gotoParam = "http://other.com/?goto=" + URLEncoder.encode(gotoParam, StandardCharsets.ISO_8859_1);
+        DEBUG.message("LOGIN SUCCESS, request.goto = " + gotoParam);
+        requestParamsMap.put(ISAuthConstants.GOTO_PARAM, gotoParam);
 
     }
 

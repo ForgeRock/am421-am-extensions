@@ -4,17 +4,10 @@ import com.forgerock.edu.policy.ContactListPrivilegesEvaluator;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.entitlement.EntitlementException;
 import com.sun.identity.shared.debug.Debug;
-import org.forgerock.oauth2.core.AccessToken;
-import org.forgerock.oauth2.core.Grant;
-import org.forgerock.oauth2.core.OAuth2Request;
-import org.forgerock.oauth2.core.ResourceOwner;
-import org.forgerock.oauth2.core.ResponseTypeHandler;
-import org.forgerock.oauth2.core.Token;
-import org.forgerock.oauth2.core.TokenResponseTypeHandler;
-import org.forgerock.oauth2.core.exceptions.InvalidClientException;
-import org.forgerock.oauth2.core.exceptions.NotFoundException;
-import org.forgerock.oauth2.core.exceptions.ServerException;
+import org.forgerock.oauth2.core.*;
+import org.forgerock.oauth2.core.exceptions.*;
 import org.forgerock.openam.oauth2.OAuth2Constants;
+import org.forgerock.openam.oauth2.token.BaseTokenStore;
 import org.forgerock.openam.oauth2.token.TokenStore;
 import org.json.JSONException;
 
@@ -23,10 +16,14 @@ import javax.inject.Singleton;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Set;
-import org.forgerock.oauth2.core.exceptions.UnauthorizedClientException;
 
+import static org.forgerock.oauth2.core.OAuth2Request.ContextKey.CLIENT_ID;
+import static org.forgerock.oauth2.core.OAuth2Request.ContextKey.NEW_GRANT_SET;
+import static org.forgerock.oauth2.core.OAuth2Request.ContextKey.RESOURCE_OWNER;
 import static org.forgerock.openam.oauth2.OAuth2Constants.AuthorizationEndpoint.TOKEN;
+import static org.forgerock.openam.oauth2.OAuth2Constants.Custom.CLAIMS;
 import static org.forgerock.openam.oauth2.OAuth2Constants.Params.ACCESS_TOKEN;
+import static org.forgerock.openam.oauth2.OAuth2Constants.Params.CODE;
 
 /**
  * This ResponseTypeHandler implementation handles the response type named
@@ -59,42 +56,46 @@ public class ContactListTokenResponseTypeHandler implements ResponseTypeHandler 
      * {@inheritDoc}
      */
     @Override
-    public Map.Entry<String, Token> handle(String tokenType, Set<String> scope, ResourceOwner resourceOwner, String clientId, String redirectUri, String nonce, OAuth2Request request, String codeChallenge, String codeChallengeMethod) throws InvalidClientException, ServerException, NotFoundException, UnauthorizedClientException {
+    public Map.Entry<String, Token> handle(String tokenType, Set<String> scope, ResourceOwner resourceOwner, String clientId, String redirectUri, String nonce, OAuth2Request request, String codeChallenge, String codeChallengeMethod) throws InvalidClientException, ServerException, NotFoundException, UnauthorizedClientException, InvalidRequestException {
         String claims = null;
         //only pass the claims param if this is a request to the authorize endpoint
-        if (request.getParameter(OAuth2Constants.Params.CODE) == null) {
-            claims = request.getParameter(OAuth2Constants.Custom.CLAIMS);
+        if (request.getParameter(CODE) == null) {
+            claims = request.getParameter(CLAIMS);
             claims = addContactListPrivilegesAsClaim(request, claims);
         }
         
         // Note: use the default implementation from TokenResponseTypeHandler 6.5.1
-        request.setContextFor(OAuth2Request.ContextKey.NEW_GRANT_SET, false);
-        request.setContextFor(OAuth2Request.ContextKey.CLIENT_ID, clientId);
-        request.setContextFor(OAuth2Request.ContextKey.RESOURCE_OWNER, resourceOwner.getId());
-        Grant grant = this.tokenStore.createGrant(clientId, resourceOwner.getId(), scope, request);
+        request.setContextFor(NEW_GRANT_SET, false);
+        request.setContextFor(CLIENT_ID, clientId);
+        request.setContextFor(RESOURCE_OWNER, resourceOwner.getUniqueId());
+        Grant grant = this.tokenStore.createGrant(clientId, resourceOwner.getId(), scope, request, BaseTokenStore.CacheStrategy.REQUEST);
         this.tokenStore.saveNewGrant(grant, request);
-        AccessToken generatedAccessToken = this.tokenStore.createAccessToken(grant, TOKEN, tokenType, nonce, claims, request, resourceOwner.getAuthTime(), scope, resourceOwner.getAuthLevel());
+
+        AccessToken generatedAccessToken = this.tokenStore.createAccessToken(grant, TOKEN, tokenType, nonce, claims, request, scope, (__, ___) -> {
+        }, resourceOwner.getAuthTime(), resourceOwner.getAuthLevel());
+
         this.tokenStore.saveNewAccessToken(generatedAccessToken, request);
         this.tokenStore.saveGrantSet(request);
         return new AbstractMap.SimpleEntry(ACCESS_TOKEN, generatedAccessToken);
+
     }
 
     /**
      * Evaluates the user's privileges and adds it into the claims structure.
-     * @param request The current OAuth2Request
+     * @param request The current`` OAuth2Request
      * @param claims The initial claims JSON structure as a String.
      * @return The modified claims JSON as a String.
      */
     String addContactListPrivilegesAsClaim(OAuth2Request request, String claims) {
         try {
             DEBUG.message("Original claims string: " + claims);
-            claims = request.getParameter(OAuth2Constants.Custom.CLAIMS);
+            claims = request.getParameter(CLAIMS);
             Set<String> privileges = ContactListPrivilegesEvaluator.evaluatePrivileges(request);
             claims = Claims.parse(claims)
-                    //DONE Ch5L1Ex2: Put a new claim definition named "contactlist-privileges" into the "userinfo" branch - this is needed when the userinfo endpoint is used.
-                    //DONE Ch5L1Ex2: Provide the user's privilege set as the hard-coded value for the "contactlist-privileges" claim.
-                    //DONE Ch5L1Ex2: Place the same claim definition to the "id_token" branch  - this is relevant during the id_token generation.
-                    //DONE Ch5L1Ex2: Hint: use the setClaimValues method of the Claims class to add
+                    //DONE Ch5L1Ex2Task4: Put a new claim definition named "contactlist-privileges" into the "userinfo" branch - this is needed when the userinfo endpoint is used.
+                    //DONE Ch5L1Ex2Task4: Provide the user's privilege set as the hard-coded value for the "contactlist-privileges" claim.
+                    //DONE Ch5L1Ex2Task4: Place the same claim definition to the "id_token" branch  - this is relevant during the id_token generation.
+                    //DONE Ch5L1Ex2Task4: Hint: use the setClaimValues method of the Claims class to add
                     .setClaimValues("userinfo", "contactlist-privileges", privileges)
                     .setClaimValues("id_token", "contactlist-privileges", privileges)
                     .toString();
