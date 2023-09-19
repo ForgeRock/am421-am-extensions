@@ -138,7 +138,7 @@ public class ContactListScopeValidator implements ScopeValidator {
         if (token != null) {
             List<String> privileges = extractPrivileges(token);
             userInfoClaims.getValues().put("contactlist-privileges", privileges);
-            // TODO 05_01: Add the expires_in property value to the user claim info in seconds.
+            // DONE Ch5L1Ex2Task3: Add the expires_in property value to the user claim info in seconds.
             userInfoClaims.getValues().put("expires_in", (token.getExpiryTime() - System.currentTimeMillis()) / 1000);
         }
         return userInfoClaims;
