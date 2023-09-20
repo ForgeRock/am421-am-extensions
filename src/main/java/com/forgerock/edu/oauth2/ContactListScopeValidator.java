@@ -43,6 +43,7 @@ public class ContactListScopeValidator implements ScopeValidator {
     private static final Debug DEBUG = Debug.getInstance("ContactListScopeValidator");
     private static final String PRIVILEGE_PREFIX = "privilege://";
 
+    // DONE Ch5L1Ex2Task2: add the @Inject annotation
     @Inject
     private OpenAMScopeValidator openAMScopeValidator;
 
